@@ -5,6 +5,7 @@
 #include <system_error>
 
 import aoc.registry;
+import aoc.wreath;
 
 namespace {
     void print_available_days() {
@@ -17,6 +18,8 @@ namespace {
 } // namespace
 
 int main(int argc, char *argv[]) {
+    std::print("{}", aoc::wreath);
+
     if (argc != 2) {
         std::println(stderr, "Usage: aoc <day>");
         return 1;

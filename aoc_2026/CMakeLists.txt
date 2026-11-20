@@ -31,6 +31,7 @@ file(GLOB DAY_MODULES CONFIGURE_DEPENDS
 add_library(aoc_days STATIC)
 target_sources(aoc_days PUBLIC FILE_SET CXX_MODULES FILES
     src/aoc/io.cppm
+    src/aoc/wreath.cppm
     src/aoc/runner.cppm
     ${DAY_MODULES}
 )
