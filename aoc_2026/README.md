@@ -119,6 +119,9 @@ Prepare `inputs/day00.txt` as shown below, set a breakpoint inside `part1` in
 different day. To debug tests, select `aoc_tests` instead; its arguments are Catch2
 filters such as `[day00]`.
 
+Input paths are resolved from the configured `aoc_2026` source directory, so input
+loading also works if the debugger or executable uses another working directory.
+
 ## Run a day
 
 Run commands from this directory. Day 0 is a warm-up, not an Advent of Code puzzle:
@@ -137,7 +140,9 @@ input loading and parsing.
 Each day's module exports a `Solution` struct containing `input_path` and
 `example_path`. The runner uses `Solution::input_path`, and the tests use the same
 constants. Day 0 reads
-`inputs/day00.txt`. Keep personal puzzle inputs under `inputs/`, which is ignored
+`inputs/day00.txt` relative to this project's source directory, regardless of the
+process's working directory. Absolute paths are used as supplied. Keep personal
+puzzle inputs under `inputs/`, which is ignored
 by Git. Small invented examples can live in `examples/` or directly in tests.
 
 `DAY` defaults to `0`. Select `PRESET=debug` (the default) or `PRESET=release`
@@ -174,7 +179,14 @@ aoc_2026/
 ├── CMakePresets.json       # Debug/release build and test commands
 ├── Makefile                # Shortcuts for configuring, building, running, and testing
 ├── .clang-format
-├── cmake/day_registry.cppm.in # Template for the generated registry module
+├── cmake/
+│   ├── day.cppm.in         # New-day module and four answer tests
+│   ├── days.cmake          # Day discovery, contract checks, and registry generation
+│   ├── dependencies.cmake # Pinned lexy and optional Catch2 dependencies
+│   ├── new_day.cmake       # Validates the day and creates the scaffold
+│   ├── options.cmake       # Warnings, sanitizers, and source-directory definition
+│   ├── testing.cmake       # Test executable and Catch2/CTest registration
+│   └── day_registry.cppm.in # Template for the generated registry module
 ├── examples/day00.txt      # Invented warm-up input
 └── src/
     ├── main.cpp            # CLI parsing and day selection
@@ -192,21 +204,38 @@ templates do not become part of our module's public API. All shared C++ helpers
 are modules; `main.cpp` remains a normal translation unit containing the entry
 point and imports the generated `aoc.registry` module.
 
+The root `CMakeLists.txt` defines the language settings, shared module list, and
+main library/executable targets. It loads the build options, dependencies, and day
+discovery in sequence from `cmake/`, then loads the testing setup when
+`BUILD_TESTING` is enabled. Catch2 is only fetched for test-enabled builds.
+
 ## Add a day
 
-1. Copy `src/days/day00.cppm` to `dayXX.cppm` and rename its module and namespace.
-2. Update `Solution::input_path` and `Solution::example_path`, then define that day's
-   input representation, lexy grammar, and static `parse`, `part1`, and `part2` methods.
-   Parsing returns `std::expected<T, std::string>` so malformed input is explicit.
-3. Update the tests at the bottom of the same module: rename their namespace,
-   names, and tags, then set the expected answers. Keep the four answer checks
-   (each part's example and personal input), alongside useful parser edge cases.
+Generate a module and empty example and input files:
+
+```sh
+make new DAY=1
+```
+
+This creates `src/days/day01.cppm`, `examples/day01.txt`, and `inputs/day01.txt`, with the module name,
+namespace, paths, and four answer tests filled in. Days from 1 to 25 are accepted;
+zero-padded values such as `DAY=08` work too. Day 0 remains the warm-up. The command
+refuses to overwrite any existing module, example, or input file. Personal inputs
+remain ignored by Git.
+
+1. Fill in the input representation, lexy grammar, and static `parse`, `part1`, and
+   `part2` methods. The scaffold initially keeps the raw text and returns zero for
+   both parts; replace these placeholders with the puzzle implementation.
+2. Paste the example into `examples/day01.txt` and your input into `inputs/day01.txt`.
+3. Set each test's expected answer and remove its `SKIP` once that answer is known.
+   All four generated tests initially report as skipped, rather than validating
+   placeholder answers. Add parser edge cases alongside them as useful.
 4. Build and run the tests:
 
 ```sh
 make test
-make test FILTER='Day 0'     # Filter by test name (regular expression)
-./build/debug/aoc_tests '[day00]' # Filter by day
+make test FILTER='day01'       # Filter by test name (regular expression)
+./build/debug/aoc_tests '[day01]' # Filter by day
 ```
 
 CMake automatically discovers day modules, including added or removed files on
@@ -234,6 +263,8 @@ No inheritance or manual registration is needed.
 
 CMake generates the `aoc.registry` module's imports and dispatch table in
 `build/<preset>/generated/day_registry.cppm`.
+Day discovery and generation live in `cmake/days.cmake`; the root build file calls
+`aoc_discover_days(DAY_MODULES DAY_REGISTRY)` to obtain the module list and registry path.
 The runner loads the selected module's input, parses it once, and runs both parts.
 No edits to `CMakeLists.txt` or `main.cpp` are needed for new days. For example,
 adding `day01.cppm` makes `make run DAY=1` available. Unknown days list the available
@@ -246,7 +277,11 @@ Keep the conditional Catch2 includes in the global module fragment (before
 `export module`), and the conditional `import aoc.test;` after the module
 declaration. Catch2 macros still need a header include because named module
 imports do not expose macros. Copying day 0 preserves this setup; no separate
-per-day test file is needed.
+per-day test file is needed. The scaffold preserves this layout automatically.
+
+When adding a helper used by both solutions and tests, add its module once to
+`AOC_COMMON_MODULES` in `CMakeLists.txt`. Runner-only helpers are listed on
+`aoc_days`; the Catch2-dependent `aoc.test` module stays on the test target only.
 
 The shared validation helper binds the day's parser once:
 
@@ -263,6 +298,11 @@ Paths are resolved from the project directory, including when CTest runs from a
 build directory. `.with(path)` requires the file; `.with_optional(path)` skips the
 test if a personal input file is absent. Files that exist but cannot be read or
 parsed still fail. Personal-input tests carry the `[input]` tag.
+
+Both the runner and validator use `aoc.io` for path resolution and reading.
+`read_input` accepts `std::filesystem::path`, and `resolve_input_path` anchors
+relative paths to the source directory recorded by CMake. The source tree and its
+input files must still be present when running a built executable.
 
 Day 0 uses the invented warm-up input `10,20,30` for both sets of answer checks
 (60 and 3). To run its personal-input checks, put that content in `inputs/day00.txt`;

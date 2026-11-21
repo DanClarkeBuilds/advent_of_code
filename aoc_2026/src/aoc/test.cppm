@@ -21,7 +21,7 @@ export namespace aoc::test {
         }
 
         Validator &with(const std::filesystem::path &path) {
-            path_ = std::filesystem::path(AOC_SOURCE_DIR) / path;
+            path_ = aoc::resolve_input_path(path);
             optional_ = false;
             return *this;
         }
@@ -38,7 +38,7 @@ export namespace aoc::test {
                 SKIP("Personal input file is not available: " << path_.string());
             }
 
-            auto text = aoc::read_input(path_.string());
+            auto text = aoc::read_input(path_);
             if (!text) {
                 FAIL(text.error());
             }

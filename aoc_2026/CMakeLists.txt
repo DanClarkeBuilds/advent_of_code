@@ -6,89 +6,33 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-option(AOC_ENABLE_SANITIZERS "Enable address and undefined behavior sanitizers" OFF)
+include(CTest)
+include(cmake/options.cmake)
+include(cmake/dependencies.cmake)
+include(cmake/days.cmake)
 
-include(FetchContent)
-set(LEXY_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
-FetchContent_Declare(lexy
-    GIT_REPOSITORY https://github.com/foonathan/lexy.git
-    GIT_TAG 982f36fe0f663153463657a166e4f173099dea6f # v2025.05.0
-    SYSTEM
-)
-FetchContent_MakeAvailable(lexy)
+aoc_discover_days(DAY_MODULES DAY_REGISTRY)
 
-add_library(aoc_options INTERFACE)
-target_compile_options(aoc_options INTERFACE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-if(AOC_ENABLE_SANITIZERS)
-    target_compile_options(aoc_options INTERFACE -fsanitize=address,undefined -fno-omit-frame-pointer)
-    target_link_options(aoc_options INTERFACE -fsanitize=address,undefined)
-endif()
-
-file(GLOB DAY_MODULES CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/days/day*.cppm"
+# Add helpers needed by both solutions and tests here once.
+set(AOC_COMMON_MODULES
+    src/aoc/io.cppm
 )
 
 add_library(aoc_days STATIC)
 target_sources(aoc_days PUBLIC FILE_SET CXX_MODULES FILES
-    src/aoc/io.cppm
+    ${AOC_COMMON_MODULES}
     src/aoc/wreath.cppm
     src/aoc/runner.cppm
     ${DAY_MODULES}
 )
 target_link_libraries(aoc_days PRIVATE foonathan::lexy::core PUBLIC aoc_options)
 
-set(DAY_IMPORTS "")
-set(DAY_CHECKS "")
-set(DAY_ENTRIES "")
-foreach(DAY_MODULE IN LISTS DAY_MODULES)
-    get_filename_component(DAY_NAME "${DAY_MODULE}" NAME_WE)
-    if(NOT DAY_NAME MATCHES "^day([0-9][0-9])$")
-        message(FATAL_ERROR "Day modules must be named dayXX.cppm: ${DAY_MODULE}")
-    endif()
-    # Prefix with 1 to avoid interpreting leading zeroes as octal.
-    math(EXPR DAY_NUMBER "1${CMAKE_MATCH_1} - 100")
-    string(APPEND DAY_IMPORTS "import aoc.${DAY_NAME};\n")
-    string(APPEND DAY_CHECKS
-        "static_assert(aoc::DayInterface<aoc::${DAY_NAME}::Solution>,\n"
-        "    \"${DAY_NAME}::Solution must provide string-like input_path/example_path, parse(string_view) returning expected<T, string>, and printable part1/part2(const T&)\");\n\n"
-    )
-    string(APPEND DAY_ENTRIES
-        "            Day{${DAY_NUMBER}, [] { return run_day<aoc::${DAY_NAME}::Solution>(${DAY_NUMBER}); }},\n"
-    )
-endforeach()
-list(LENGTH DAY_MODULES DAY_COUNT)
-configure_file(cmake/day_registry.cppm.in generated/day_registry.cppm @ONLY)
-
 add_executable(aoc src/main.cpp)
 target_sources(aoc PRIVATE FILE_SET CXX_MODULES FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/generated/day_registry.cppm"
+    "${DAY_REGISTRY}"
 )
 target_link_libraries(aoc PRIVATE aoc_days)
 
-include(CTest)
 if(BUILD_TESTING)
-    FetchContent_Declare(Catch2
-        GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-        GIT_TAG 5010924c4d8e912e64fd64a11819eecacf572c06 # v3.16.1
-        SYSTEM
-    )
-    FetchContent_MakeAvailable(Catch2)
-    # Compile modules directly into the test executable so every test registration
-    # is linked, with separate module artifacts from the normal runner build.
-    add_executable(aoc_tests)
-    target_sources(aoc_tests PRIVATE FILE_SET CXX_MODULES FILES
-        src/aoc/io.cppm
-        src/aoc/test.cppm
-        ${DAY_MODULES}
-    )
-    target_compile_definitions(aoc_tests PRIVATE
-        AOC_TESTING
-        AOC_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-    )
-    target_link_libraries(aoc_tests PRIVATE
-        foonathan::lexy::core aoc_options Catch2::Catch2WithMain
-    )
-    list(APPEND CMAKE_MODULE_PATH "${catch2_SOURCE_DIR}/extras")
-    include(Catch)
-    catch_discover_tests(aoc_tests)
+    include(cmake/testing.cmake)
 endif()

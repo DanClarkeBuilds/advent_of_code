@@ -16,7 +16,7 @@ CXX := clang++
 endif
 endif
 
-.PHONY: configure build clean rebuild run test format help
+.PHONY: configure build clean rebuild run test new format help
 
 configure:
 	CXX="$(CXX)" cmake --preset "$(PRESET)"
@@ -38,12 +38,16 @@ run: build
 test: build
 	ctest --preset "$(PRESET)" -R "$(FILTER)"
 
+new:
+	cmake "-DDAY=$(DAY)" -P cmake/new_day.cmake
+
 format:
 	"$(CLANG_FORMAT)" -i $(FORMAT_SOURCES)
 
 help:
 	@echo 'make                         Configure and build (debug with sanitizers)'
 	@echo 'make run DAY=0               Build and run a day using its module input path'
+	@echo 'make new DAY=1               Scaffold a day module and example file'
 	@echo 'make test                    Build and run all tests'
 	@echo 'make test FILTER="Day 0"      Run tests matching a name pattern'
 	@echo 'make test PRESET=release      Build and test in release mode'

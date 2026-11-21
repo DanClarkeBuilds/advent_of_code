@@ -37,7 +37,7 @@ export namespace aoc {
 
     template <DayInterface Day> int run_day(int day) {
         const std::string_view path = Day::input_path;
-        auto text = read_input(std::string(path));
+        auto text = read_input(path);
         if (!text) {
             std::println(stderr, "{}", text.error());
             return 1;

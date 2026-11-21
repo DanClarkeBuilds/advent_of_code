@@ -62,10 +62,8 @@ namespace aoc::day00 {
 
         static std::size_t part2(const Input &input) { return input.size(); }
     };
-} // namespace aoc::day00
 
 #ifdef AOC_TESTING
-namespace aoc::day00 {
     namespace {
         const auto validate = aoc::test::Validator(Solution::parse);
     } // namespace
@@ -107,5 +105,5 @@ namespace aoc::day00 {
             CHECK_FALSE(input.error().empty());
         }
     }
-} // namespace aoc::day00
 #endif
+} // namespace aoc::day00
