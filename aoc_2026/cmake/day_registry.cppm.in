@@ -10,6 +10,8 @@ import aoc.runner;
 
 @DAY_IMPORTS@
 
+@DAY_CHECKS@
+
 export namespace aoc {
     struct Day {
         int number;

@@ -134,8 +134,9 @@ make run DAY=0
 Expected answers: **60** and **3**. Each part reports its execution time, excluding
 input loading and parsing.
 
-Each day's module declares `input_path` and `example_path`. The runner uses that
-day's `input_path`, and the tests use the same module constants. Day 0 reads
+Each day's module exports a `Solution` struct containing `input_path` and
+`example_path`. The runner uses `Solution::input_path`, and the tests use the same
+constants. Day 0 reads
 `inputs/day00.txt`. Keep personal puzzle inputs under `inputs/`, which is ignored
 by Git. Small invented examples can live in `examples/` or directly in tests.
 
@@ -194,9 +195,9 @@ point and imports the generated `aoc.registry` module.
 ## Add a day
 
 1. Copy `src/days/day00.cppm` to `dayXX.cppm` and rename its module and namespace.
-2. Update the module's `input_path` and `example_path`, then define that day's
-   input type, lexy grammar, `parse`, `part1`, and `part2`.
-   Parsing returns `std::expected<Input, std::string>` so malformed input is explicit.
+2. Update `Solution::input_path` and `Solution::example_path`, then define that day's
+   input representation, lexy grammar, and static `parse`, `part1`, and `part2` methods.
+   Parsing returns `std::expected<T, std::string>` so malformed input is explicit.
 3. Update the tests at the bottom of the same module: rename their namespace,
    names, and tags, then set the expected answers. Keep the four answer checks
    (each part's example and personal input), alongside useful parser edge cases.
@@ -211,8 +212,25 @@ make test FILTER='Day 0'     # Filter by test name (regular expression)
 CMake automatically discovers day modules, including added or removed files on
 the next build. Modules must follow the two-digit naming
 convention: `dayXX.cppm`, `export module aoc.dayXX`, and namespace `aoc::dayXX`.
-Each namespace provides `input_path`, `parse`, `part1`, and `part2` (plus
-`example_path` for tests). Solvers take the parsed input and return printable answers.
+Each namespace exports a `Solution` struct. The generated registry checks its
+interface at compile time:
+
+```cpp
+static_assert(aoc::DayInterface<aoc::day00::Solution>);
+```
+
+- Both paths must be convertible to `std::string_view`.
+- Static `parse(std::string_view)` must return `std::expected<T, std::string>`.
+- Static `part1` and `part2` must accept `const T&` and return printable answers.
+
+`aoc::ParsedInput<Solution>` infers `T` from the parser's return type. It can be a
+container, a custom grid or graph, or any other parsed value type. An `Input` alias
+is optional; day 0 keeps one inside its namespace for readability. Helpers and the
+lexy grammar can also stay in that namespace without being exported.
+
+The solvers may return different printable types, such as an integer for part 1
+and a string for part 2. Missing members or incompatible signatures fail the build.
+No inheritance or manual registration is needed.
 
 CMake generates the `aoc.registry` module's imports and dispatch table in
 `build/<preset>/generated/day_registry.cppm`.
@@ -234,10 +252,10 @@ The shared validation helper binds the day's parser once:
 
 ```cpp
 // Inside the day's namespace and AOC_TESTING block:
-const auto validate = aoc::test::Validator(parse);
+const auto validate = aoc::test::Validator(Solution::parse);
 
 TEST_CASE("day00 part1 example", "[day00]") {
-    validate(part1).with(example_path).equals(60);
+    validate(Solution::part1).with(Solution::example_path).equals(60);
 }
 ```
 

@@ -38,6 +38,7 @@ target_sources(aoc_days PUBLIC FILE_SET CXX_MODULES FILES
 target_link_libraries(aoc_days PRIVATE foonathan::lexy::core PUBLIC aoc_options)
 
 set(DAY_IMPORTS "")
+set(DAY_CHECKS "")
 set(DAY_ENTRIES "")
 foreach(DAY_MODULE IN LISTS DAY_MODULES)
     get_filename_component(DAY_NAME "${DAY_MODULE}" NAME_WE)
@@ -47,8 +48,12 @@ foreach(DAY_MODULE IN LISTS DAY_MODULES)
     # Prefix with 1 to avoid interpreting leading zeroes as octal.
     math(EXPR DAY_NUMBER "1${CMAKE_MATCH_1} - 100")
     string(APPEND DAY_IMPORTS "import aoc.${DAY_NAME};\n")
+    string(APPEND DAY_CHECKS
+        "static_assert(aoc::DayInterface<aoc::${DAY_NAME}::Solution>,\n"
+        "    \"${DAY_NAME}::Solution must provide string-like input_path/example_path, parse(string_view) returning expected<T, string>, and printable part1/part2(const T&)\");\n\n"
+    )
     string(APPEND DAY_ENTRIES
-        "            Day{${DAY_NUMBER}, [] { return run_day(${DAY_NUMBER}, aoc::${DAY_NAME}::input_path, aoc::${DAY_NAME}::parse, aoc::${DAY_NAME}::part1, aoc::${DAY_NAME}::part2); }},\n"
+        "            Day{${DAY_NUMBER}, [] { return run_day<aoc::${DAY_NAME}::Solution>(${DAY_NUMBER}); }},\n"
     )
 endforeach()
 list(LENGTH DAY_MODULES DAY_COUNT)
