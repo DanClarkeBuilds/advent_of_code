@@ -2,8 +2,9 @@ module;
 
 #include <cstdint>
 #include <expected>
+#include <span>
 #include <string>
-#include <string_view>
+#include <vector>
 
 #include <lexy/action/parse.hpp>
 #include <lexy/callback.hpp>
@@ -21,23 +22,24 @@ import aoc.test;
 #endif
 
 namespace aoc::day01 {
-    using Input = std::string;
+    using Input = std::vector<std::string>;
 
     export struct Solution {
         static constexpr auto input_path = "inputs/day01.txt";
         static constexpr auto example_path = "examples/day01.txt";
 
-        static std::expected<Input, std::string> parse(std::string_view text) {
-            // TODO: parse the puzzle input with lexy.
-            return std::string(text);
+        [[nodiscard]] static std::expected<Input, std::string>
+        parse(const std::span<const std::string> lines) {
+            // TODO: parse the puzzle input lines with lexy.
+            return Input(lines.begin(), lines.end());
         }
 
-        static std::int64_t part1(const Input &) {
+        [[nodiscard]] static std::int64_t part1(const Input &) {
             // TODO: solve part 1.
             return 0;
         }
 
-        static std::int64_t part2(const Input &) {
+        [[nodiscard]] static std::int64_t part2(const Input &) {
             // TODO: solve part 2.
             return 0;
         }

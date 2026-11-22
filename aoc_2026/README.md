@@ -101,7 +101,7 @@ Modules follow the two-digit naming convention: `dayXX.cppm`,
 automatically; no edits to `CMakeLists.txt` or `main.cpp` are needed.
 
 1. Fill in the input representation, lexy grammar, and static `parse`, `part1`, and
-   `part2` methods. The scaffold initially keeps the raw text and returns zero for
+   `part2` methods. The scaffold initially keeps the input lines and returns zero for
    both parts; replace these placeholders with the puzzle implementation.
 2. Fill the generated [example and input files](#inputs-and-examples).
 3. Set each test's expected answer and remove its `SKIP` once that answer is known.
@@ -145,7 +145,7 @@ test if a personal input file is absent. Files that exist but cannot be read or
 parsed still fail. Personal-input tests carry the `[input]` tag.
 
 Day 0 uses the invented warm-up input `10,20,30` for both sets of answer checks
-(60 and 3). To run its personal-input checks, put that content in `inputs/day00.txt`;
+(60 and 6,000). To run its personal-input checks, put that content in `inputs/day00.txt`;
 if you use different content, update the expected answers accordingly.
 
 ## Inputs and examples
@@ -159,12 +159,18 @@ Keep personal puzzle inputs under `inputs/`, which is ignored by Git. Small
 invented examples can live in `examples/` or directly in tests.
 
 Both the runner and validator use `aoc.io` for path resolution and reading.
-`read_input` accepts `std::filesystem::path`, and `resolve_input_path` anchors
-relative paths to the source directory recorded by CMake. The source tree and its
+`read_input` accepts `std::filesystem::path` and returns
+`std::expected<std::vector<std::string>, std::string>`. Each string owns one line;
+LF and CRLF line endings are removed, while blank lines and other whitespace are
+preserved. An empty file produces no lines, and a final newline does not add an
+extra line. Each day's `parse(std::span<const std::string>)` receives a read-only
+view of these lines and produces its puzzle-specific input type.
+
+`resolve_input_path` anchors relative paths to the source directory recorded by CMake. The source tree and its
 input files must still be present when running a built executable.
 
 Day 0 is an invented warm-up, not an Advent of Code puzzle. It sums comma-separated
-nonnegative integers for part 1 and counts them for part 2. Prepare its input once:
+nonnegative integers on a single line for part 1 and multiplies them for part 2. Prepare its input once:
 
 ```sh
 mkdir -p inputs
@@ -172,7 +178,7 @@ cp examples/day00.txt inputs/day00.txt
 make run DAY=0
 ```
 
-Expected answers: **60** and **3**.
+Expected answers: **60** and **6,000**.
 
 ## Formatting
 
@@ -235,8 +241,8 @@ interface at compile time:
 static_assert(aoc::DayInterface<aoc::day00::Solution>);
 ```
 
-- Both paths must be convertible to `std::string_view`.
-- Static `parse(std::string_view)` must return `std::expected<T, std::string>`.
+- The input path must be convertible to `std::string_view`.
+- Static `parse(std::span<const std::string>)` must return `std::expected<T, std::string>`.
 - Static `part1` and `part2` must accept `const T&` and return printable answers.
 
 `aoc::ParsedInput<Solution>` infers `T` from the parser's return type. It can be a

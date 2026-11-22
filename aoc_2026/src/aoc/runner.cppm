@@ -6,6 +6,7 @@ module;
 #include <expected>
 #include <format>
 #include <print>
+#include <span>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -16,15 +17,17 @@ import aoc.io;
 
 export namespace aoc {
     template <typename Day>
-    using ParsedInput = typename decltype(Day::parse(std::declval<std::string_view>()))::value_type;
+    using ParsedInput =
+        decltype(Day::parse(std::declval<std::span<const std::string>>()))::value_type;
 
     template <typename Day>
-    concept DayInterface = requires(std::string_view text, const ParsedInput<Day> &input) {
-        { Day::input_path } -> std::convertible_to<std::string_view>;
-        { Day::parse(text) } -> std::same_as<std::expected<ParsedInput<Day>, std::string>>;
-        { Day::part1(input) } -> std::formattable<char>;
-        { Day::part2(input) } -> std::formattable<char>;
-    };
+    concept DayInterface =
+        requires(std::span<const std::string> lines, const ParsedInput<Day> &input) {
+            { Day::input_path } -> std::convertible_to<std::string_view>;
+            { Day::parse(lines) } -> std::same_as<std::expected<ParsedInput<Day>, std::string>>;
+            { Day::part1(input) } -> std::formattable<char>;
+            { Day::part2(input) } -> std::formattable<char>;
+        };
 
     template <typename Function> void run_part(int part, Function solve) {
         const auto start = std::chrono::steady_clock::now();
@@ -36,13 +39,13 @@ export namespace aoc {
 
     template <DayInterface Day> int run_day(int day) {
         const std::string_view path = Day::input_path;
-        auto text = read_input(path);
-        if (!text) {
-            std::println(stderr, "{}", text.error());
+        auto lines = read_input(path);
+        if (!lines) {
+            std::println(stderr, "{}", lines.error());
             return 1;
         }
 
-        auto input = Day::parse(*text);
+        auto input = Day::parse(*lines);
         if (!input) {
             std::println(stderr, "{}: {}", path, input.error());
             return 1;

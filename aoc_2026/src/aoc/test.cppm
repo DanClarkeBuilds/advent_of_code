@@ -14,46 +14,46 @@ import aoc.io;
 export namespace aoc::test {
     template <typename Parser, typename Solver = std::nullptr_t> class Validator {
       public:
-        Validator(Parser parse, Solver solve = {}) : parse_(parse), solve_(solve) {}
+        explicit Validator(Parser parse, Solver solve = {}) : parse(parse), solve(solve) {}
 
-        template <typename Function> auto operator()(Function solve) const {
-            return Validator<Parser, Function>(parse_, solve);
+        template <typename Function> auto operator()(Function solver) const {
+            return Validator<Parser, Function>(parse, solver);
         }
 
-        Validator &with(const std::filesystem::path &path) {
-            path_ = aoc::resolve_input_path(path);
-            optional_ = false;
+        Validator &with(const std::filesystem::path &input_path) {
+            path = aoc::resolve_input_path(input_path);
+            optional = false;
             return *this;
         }
 
-        Validator &with_optional(const std::filesystem::path &path) {
-            with(path);
-            optional_ = true;
+        Validator &with_optional(const std::filesystem::path &input_path) {
+            with(input_path);
+            optional = true;
             return *this;
         }
 
         template <typename Answer> void equals(const Answer &expected) const {
-            INFO("Input: " << path_.string());
-            if (optional_ && !std::filesystem::exists(path_)) {
-                SKIP("Personal input file is not available: " << path_.string());
+            INFO("Input: " << path.string());
+            if (optional && !std::filesystem::exists(path)) {
+                SKIP("Personal input file is not available: " << path.string());
             }
 
-            auto text = aoc::read_input(path_);
-            if (!text) {
-                FAIL(text.error());
+            auto lines = aoc::read_input(path);
+            if (!lines) {
+                FAIL(lines.error());
             }
-            auto input = parse_(*text);
+            auto input = parse(*lines);
             if (!input) {
                 FAIL("Could not parse input: " << input.error());
             }
-            CHECK(solve_(*input) == expected);
+            CHECK(solve(*input) == expected);
         }
 
       private:
-        Parser parse_;
-        Solver solve_;
-        std::filesystem::path path_;
-        bool optional_ = false;
+        Parser parse;
+        Solver solve;
+        std::filesystem::path path;
+        bool optional = false;
     };
 
 } // namespace aoc::test
