@@ -16,7 +16,7 @@ function(aoc_discover_days MODULES_VARIABLE REGISTRY_VARIABLE)
         string(APPEND DAY_IMPORTS "import aoc.${DAY_NAME};\n")
         string(APPEND DAY_CHECKS
             "static_assert(aoc::DayInterface<aoc::${DAY_NAME}::Solution>,\n"
-            "    \"${DAY_NAME}::Solution must provide string-like input_path/example_path, parse(string_view) returning expected<T, string>, and printable part1/part2(const T&)\");\n\n"
+            "    \"${DAY_NAME}::Solution must provide string-like input_path parse(string_view) returning expected<T, string>, and printable part1/part2(const T&)\");\n\n"
         )
         string(APPEND DAY_ENTRIES
             "            Day{${DAY_NUMBER}, [] { return run_day<aoc::${DAY_NAME}::Solution>(${DAY_NUMBER}); }},\n"

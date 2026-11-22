@@ -21,7 +21,6 @@ export namespace aoc {
     template <typename Day>
     concept DayInterface = requires(std::string_view text, const ParsedInput<Day> &input) {
         { Day::input_path } -> std::convertible_to<std::string_view>;
-        { Day::example_path } -> std::convertible_to<std::string_view>;
         { Day::parse(text) } -> std::same_as<std::expected<ParsedInput<Day>, std::string>>;
         { Day::part1(input) } -> std::formattable<char>;
         { Day::part2(input) } -> std::formattable<char>;
