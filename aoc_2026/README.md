@@ -58,9 +58,12 @@ the available day numbers. For the initial day 0 input, follow the
 Each part reports its execution time, excluding input loading and parsing.
 
 Select `PRESET=debug` (the default) or `PRESET=release` consistently for building,
-testing, and running. Debug enables AddressSanitizer and UndefinedBehaviorSanitizer;
-release enables optimized builds without sanitizers. Compiler warnings are enabled
-for both presets.
+testing, and running. Debug enables AddressSanitizer and UndefinedBehaviorSanitizer,
+with UBSan stopping at the first detected error. Debug configurations also enable
+libc++ debug hardening to check standard-library preconditions, such as accessing
+an empty container. These library checks apply when using libc++, as in the macOS
+LLVM setup. Release uses optimizations and the library's default hardening level,
+without sanitizers. Compiler warnings are enabled for both presets.
 
 ```sh
 make build PRESET=release

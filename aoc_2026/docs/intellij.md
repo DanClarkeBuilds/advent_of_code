@@ -51,6 +51,8 @@ toolchain or edit a copy of the preset's profile.
 
 When sharing `build/debug` through a manually configured profile, add
 `-DAOC_ENABLE_SANITIZERS=ON` to its **CMake options** to match the debug preset.
+UBSan stops at the first detected error when sanitizers are enabled. libc++ debug
+hardening is enabled automatically for Debug configurations.
 Run IDE and terminal builds sequentially when they use the same directory.
 
 After changing compilers, use **Reset Cache and Reload Project** from the CMake
