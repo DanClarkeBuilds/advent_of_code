@@ -37,7 +37,7 @@ export namespace aoc {
         std::println("Part {}: {} ({:.1f} us)", part, answer, elapsed.count());
     }
 
-    template <DayInterface Day> int run_day(int day) {
+    template <DayInterface Day> int run_day(int day, int year = 2026) {
         const std::string_view path = Day::input_path;
         auto lines = read_input(path);
         if (!lines) {
@@ -51,7 +51,7 @@ export namespace aoc {
             return 1;
         }
 
-        std::println("Advent of Code 2026 - Day {}", day);
+        std::println("Advent of Code {} - Day {}", year, day);
         run_part(1, [&] { return Day::part1(*input); });
         run_part(2, [&] { return Day::part2(*input); });
         return 0;

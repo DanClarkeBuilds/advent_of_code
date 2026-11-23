@@ -55,6 +55,13 @@ first. Run `make help` for the shortcuts. `DAY` defaults to `0`; unknown days li
 the available day numbers. For the initial day 0 input, follow the
 [warm-up instructions](#inputs-and-examples).
 
+For a practice module from another year, include the year in the day selector:
+
+```sh
+make run DAY=04_2020
+make test FILTER=day04_2020
+```
+
 Each part reports its execution time, excluding input loading and parsing.
 
 Select `PRESET=debug` (the default) or `PRESET=release` consistently for building,
@@ -265,7 +272,12 @@ Day discovery and generation live in `cmake/days.cmake`; the root build file cal
 `aoc_discover_days(DAY_MODULES DAY_REGISTRY)` to obtain the module list and registry path.
 The runner loads the selected module's input, parses it once, and runs both parts.
 No edits to `CMakeLists.txt` or `main.cpp` are needed for new days. For example,
-adding `day01.cppm` makes `make run DAY=1` available. Unknown days list the available
+adding `day01.cppm` makes `make run DAY=1` available. Practice modules can use
+`dayXX_YYYY.cppm`, with matching module and namespace names, such as
+`aoc.day04_2020` and `aoc::day04_2020`. They are registered separately from the
+current year's day and selected with `DAY=04_2020`. Use distinct input/example
+paths and test names/tags for each practice module. `make new` scaffolds current-year
+days; year-suffixed practice modules are added manually. Unknown days list the available
 day numbers. Only put day modules ready to compile under this filename pattern.
 
 ### Shared modules
