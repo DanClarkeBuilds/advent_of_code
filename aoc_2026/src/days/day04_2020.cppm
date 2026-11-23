@@ -136,7 +136,7 @@ namespace aoc::day04_2020 {
 
         struct Field {
             std::string_view key;
-            bool (*valid)(const std::string_view);
+            bool (*valid)(std::string_view);
         };
 
         constexpr std::array expected_fields{
