@@ -1,12 +1,13 @@
 module;
 
 #include <algorithm>
+#include <array>
+#include <charconv>
 #include <expected>
 #include <ranges>
 #include <span>
 #include <string>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 #include <lexy/action/parse.hpp>
@@ -59,7 +60,7 @@ namespace aoc::day04_2020 {
 
             struct Hex {
                 static constexpr auto rule =
-                    dsl::hash_sign >> dsl::n_digits<6, dsl::hex> + dsl::eof;
+                    dsl::hash_sign >> dsl::n_digits<6, dsl::hex_lower> + dsl::eof;
             };
 
             struct Pid {
@@ -89,92 +90,67 @@ namespace aoc::day04_2020 {
         } // namespace
 
         namespace {
-            struct Validator {
-                virtual ~Validator() = default;
+            constexpr bool within(const int n, const int lo, const int hi) {
+                return lo <= n && n <= hi;
+            }
 
-                virtual bool validate(const std::string value) = 0;
-            };
+            bool year(const std::string_view &value, const int lo, const int hi) {
+                const auto year = std::stoi(std::string(value));
 
-            struct MinMaxValidator : Validator {
-                size_t len;
-                int min;
-                int max;
+                return value.size() == 4 && within(year, lo, hi);
+            }
 
-                explicit MinMaxValidator(const int min, const int max, const size_t len = 0)
-                    : len(len), min{min}, max{max} {}
+            bool validate_height(const std::string_view &value) {
+                const lexy::string_input input(value.data(), value.size());
 
-                bool validate(const std::string value) override {
-                    const auto num = std::stoi(value);
-
-                    return (len == 0 || value.size() == len) && min <= num && num <= max;
+                const auto parsed_height = lexy::parse<Height>(input, lexy::noop);
+                if (!parsed_height) {
+                    return false;
                 }
-            };
 
-            struct HeightValidator : Validator {
-                std::unordered_map<std::string, MinMaxValidator> validators;
-
-                explicit HeightValidator(
-                    const std::unordered_map<std::string, MinMaxValidator> &validators)
-                    : validators{validators} {}
-
-                bool validate(const std::string value) override {
-                    const lexy::string_input input(value.data(), value.size());
-
-                    const auto fragment = lexy::parse<Height>(input, lexy::noop);
-                    if (!fragment) {
-                        return false;
-                    }
-
-                    return validators.at(fragment.value().second)
-                        .validate(std::to_string(fragment.value().first));
+                const auto [height, unit] = parsed_height.value();
+                if (unit == "cm") {
+                    return within(height, 150, 193);
                 }
-            };
-
-            struct HexValidator : Validator {
-                bool validate(const std::string value) override {
-                    const lexy::string_input input(value.data(), value.size());
-
-                    return !!lexy::validate<Hex>(input, lexy::noop);
+                if (unit == "in") {
+                    return within(height, 59, 76);
                 }
+                return false;
+            }
+
+            bool validate_hex(const std::string_view &value) {
+                const lexy::string_input input(value.data(), value.size());
+
+                return !!lexy::validate<Hex>(input, lexy::noop);
+            }
+
+            constexpr std::array<std::string, 7> expected_colours{
+                "amb", "blu", "brn", "gry", "grn", "hzl", "oth",
+            };
+            bool validate_eye(const std::string_view &value) {
+                return std::ranges::find(expected_colours, value) != expected_colours.end();
+            }
+
+            bool validate_pid(const std::string_view &value) {
+                const lexy::string_input input(value.data(), value.size());
+
+                return !!lexy::validate<Pid>(input, lexy::noop);
+            }
+
+            struct Field {
+                std::string_view key;
+                bool (*valid)(const std::string_view &);
             };
 
-            struct EyeValidator : Validator {
-                std::unordered_set<std::string> expected_colours{
-                    "amb", "blu", "brn", "gry", "grn", "hzl", "oth",
-                };
-
-                bool validate(const std::string value) override {
-                    return expected_colours.contains(value);
-                }
+            constexpr std::array expected_fields{
+                Field{.key = "byr", .valid = [](auto s) { return year(s, 1920, 2002); }},
+                Field{.key = "iyr", .valid = [](auto s) { return year(s, 2010, 2020); }},
+                Field{.key = "eyr", .valid = [](auto s) { return year(s, 2020, 2030); }},
+                Field{.key = "hgt", .valid = validate_height},
+                Field{.key = "hcl", .valid = validate_hex},
+                Field{.key = "ecl", .valid = validate_eye},
+                Field{.key = "pid", .valid = validate_pid},
             };
-
-            struct PidValidator : Validator {
-                bool validate(const std::string value) override {
-                    const lexy::string_input input(value.data(), value.size());
-
-                    return !!lexy::validate<Pid>(input, lexy::noop);
-                }
-            };
-
-            auto expected_fields = [] {
-                std::unordered_map<std::string, std::unique_ptr<Validator>> fields;
-
-                fields.emplace("byr", std::make_unique<MinMaxValidator>(1920, 2002, 4));
-                fields.emplace("iyr", std::make_unique<MinMaxValidator>(2010, 2020, 4));
-                fields.emplace("eyr", std::make_unique<MinMaxValidator>(2020, 2030, 4));
-
-                fields.emplace("hgt", std::make_unique<HeightValidator>(
-                                          std::unordered_map<std::string, MinMaxValidator>{
-                                              {"cm", MinMaxValidator(150, 193)},
-                                              {"in", MinMaxValidator(59, 76)},
-                                          }));
-
-                fields.emplace("hcl", std::make_unique<HexValidator>());
-                fields.emplace("ecl", std::make_unique<EyeValidator>());
-                fields.emplace("pid", std::make_unique<PidValidator>());
-
-                return fields;
-            }();
         } // namespace
     } // namespace
 
@@ -185,7 +161,7 @@ namespace aoc::day04_2020 {
         [[nodiscard]] static std::expected<Input, std::string>
         parse(const std::span<const std::string> lines) {
             return lines | std::views::split(std::string{}) |
-                   std::views::transform([=](auto group) -> ExpectedRecord {
+                   std::views::transform([](auto group) -> ExpectedRecord {
                        return std::ranges::fold_left(
                            group, ExpectedRecord{Record{}},
                            [=](ExpectedRecord acc, const auto &line) -> ExpectedRecord {
@@ -204,19 +180,18 @@ namespace aoc::day04_2020 {
         }
 
         [[nodiscard]] static std::int64_t part1(const Input &input) {
-            return std::ranges::count_if(input, [=](const Record &record) {
-                return std::ranges::all_of(
-                    expected_fields | std::views::keys,
-                    [&record](const auto &key) -> bool { return record.contains(key); });
+            return std::ranges::count_if(input, [](const Record &record) {
+                return std::ranges::all_of(expected_fields, [&record](const auto &field) -> bool {
+                    return record.contains(field.key.data());
+                });
             });
         }
 
         [[nodiscard]] static std::int64_t part2(const Input &input) {
-            return std::ranges::count_if(input, [=](const Record &record) {
+            return std::ranges::count_if(input, [](const Record &record) {
                 return std::ranges::all_of(expected_fields, [&record](const auto &field) -> bool {
-                    const auto &[key, validator] = field;
-
-                    return record.contains(key) && validator->validate(record.at(key));
+                    return record.contains(field.key.data()) &&
+                           field.valid(record.at(field.key.data()));
                 });
             });
         }
@@ -240,7 +215,6 @@ namespace aoc::day04_2020 {
     }
 
     TEST_CASE("day04_2020 part2", "[day04_2020][input]") {
-        SKIP("TODO: set the expected answer, then remove this SKIP.");
         validate(Solution::part2).with_optional(Solution::input_path).equals(188);
     }
 #endif
