@@ -31,23 +31,6 @@ namespace aoc::day04_2020 {
     using Input = std::vector<Record>;
 
     namespace {
-        struct CollectRecords : std::ranges::range_adaptor_closure<CollectRecords> {
-            template <std::ranges::input_range Range>
-            std::expected<Input, std::string> operator()(Range &&records) const {
-                Input input;
-
-                for (auto record : records) {
-                    if (!record) {
-                        return std::unexpected(record.error());
-                    }
-
-                    input.push_back(std::move(*record));
-                }
-
-                return input;
-            }
-        };
-
         namespace dsl = lexy::dsl;
 
         struct KeyText {
@@ -148,6 +131,34 @@ namespace aoc::day04_2020 {
             Field{.key = "ecl", .valid = validate_eye},
             Field{.key = "pid", .valid = validate_pid},
         };
+
+        ExpectedRecord parse_record(const std::span<const std::string> group) {
+            const auto text = group | std::views::join_with(' ') | std::ranges::to<std::string>();
+            const lexy::string_input input(text.data(), text.size());
+
+            auto result = lexy::parse<KeyValues>(input, lexy::noop);
+            if (!result) {
+                return std::unexpected("Expected a map of key->value");
+            }
+            return std::move(result).value();
+        }
+
+        struct CollectRecords : std::ranges::range_adaptor_closure<CollectRecords> {
+            template <std::ranges::input_range Range>
+            std::expected<Input, std::string> operator()(Range &&records) const {
+                Input input;
+
+                for (auto record : records) {
+                    if (!record) {
+                        return std::unexpected(record.error());
+                    }
+
+                    input.push_back(std::move(*record));
+                }
+
+                return input;
+            }
+        };
     } // namespace
 
     export struct Solution {
@@ -157,25 +168,10 @@ namespace aoc::day04_2020 {
         [[nodiscard]] static std::expected<Input, std::string>
         parse(const std::span<const std::string> lines) {
             return lines | std::views::split(std::string{}) |
-                   std::views::transform([](auto group) -> ExpectedRecord {
-                       return std::ranges::fold_left(
-                           group, ExpectedRecord{Record{}},
-                           [](ExpectedRecord acc, const auto &line) -> ExpectedRecord {
-                               if (!acc) {
-                                   return acc;
-                               }
-
-                               const lexy::string_input input(line.data(), line.size());
-
-                               auto fragment = lexy::parse<KeyValues>(input, lexy::noop);
-                               if (!fragment) {
-                                   return std::unexpected("Expected a map of key->value");
-                               }
-
-                               acc->insert(fragment.value().begin(), fragment.value().end());
-                               return acc;
-                           });
-                   }) |
+                   std::views::filter(
+                       [](auto group) -> bool { return !std::ranges::empty(group); }) |
+                   std::views::transform(
+                       [](auto group) -> ExpectedRecord { return parse_record(group); }) |
                    CollectRecords{};
         }
 
