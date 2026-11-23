@@ -92,9 +92,9 @@ namespace aoc::day04_2020 {
                 return false;
             }
 
-            const auto year = std::stoi(std::string(value));
+            const auto num = std::stoi(std::string(value));
 
-            return within(year, lo, hi);
+            return within(num, lo, hi);
         }
 
         bool validate_height(const std::string_view value) {
@@ -160,7 +160,11 @@ namespace aoc::day04_2020 {
                    std::views::transform([](auto group) -> ExpectedRecord {
                        return std::ranges::fold_left(
                            group, ExpectedRecord{Record{}},
-                           [=](ExpectedRecord acc, const auto &line) -> ExpectedRecord {
+                           [](ExpectedRecord acc, const auto &line) -> ExpectedRecord {
+                               if (!acc) {
+                                   return acc;
+                               }
+
                                const lexy::string_input input(line.data(), line.size());
 
                                auto fragment = lexy::parse<KeyValues>(input, lexy::noop);
@@ -178,7 +182,7 @@ namespace aoc::day04_2020 {
         [[nodiscard]] static std::int64_t part1(const Input &input) {
             return std::ranges::count_if(input, [](const Record &record) {
                 return std::ranges::all_of(expected_fields, [&record](const auto &field) -> bool {
-                    return record.contains(field.key.data());
+                    return record.contains(std::string{field.key});
                 });
             });
         }
@@ -186,7 +190,7 @@ namespace aoc::day04_2020 {
         [[nodiscard]] static std::int64_t part2(const Input &input) {
             return std::ranges::count_if(input, [](const Record &record) {
                 return std::ranges::all_of(expected_fields, [&record](const auto &field) -> bool {
-                    const auto it = record.find(field.key.data());
+                    const auto it = record.find(std::string{field.key});
 
                     return it != record.end() && field.valid(it->second);
                 });
