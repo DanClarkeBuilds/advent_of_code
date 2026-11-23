@@ -190,8 +190,9 @@ namespace aoc::day04_2020 {
         [[nodiscard]] static std::int64_t part2(const Input &input) {
             return std::ranges::count_if(input, [](const Record &record) {
                 return std::ranges::all_of(expected_fields, [&record](const auto &field) -> bool {
-                    return record.contains(field.key.data()) &&
-                           field.valid(record.at(field.key.data()));
+                    const auto it = record.find(field.key.data());
+
+                    return it != record.end() && field.valid(it->second);
                 });
             });
         }
