@@ -83,12 +83,11 @@ namespace aoc::day04_2020 {
             static constexpr auto rule = dsl::n_digits<9, dsl::decimal> + dsl::eof;
         };
 
-
         constexpr bool within(const int n, const int lo, const int hi) {
             return lo <= n && n <= hi;
         }
 
-        bool year(const std::string_view &value, const int lo, const int hi) {
+        bool year(const std::string_view value, const int lo, const int hi) {
             if (value.size() != 4) {
                 return false;
             }
@@ -98,7 +97,7 @@ namespace aoc::day04_2020 {
             return within(year, lo, hi);
         }
 
-        bool validate_height(const std::string_view &value) {
+        bool validate_height(const std::string_view value) {
             const lexy::string_input input(value.data(), value.size());
 
             const auto parsed_height = lexy::parse<Height>(input, lexy::noop);
@@ -116,7 +115,7 @@ namespace aoc::day04_2020 {
             return false;
         }
 
-        bool validate_hex(const std::string_view &value) {
+        bool validate_hex(const std::string_view value) {
             const lexy::string_input input(value.data(), value.size());
 
             return !!lexy::validate<Hex>(input, lexy::noop);
@@ -125,11 +124,11 @@ namespace aoc::day04_2020 {
         constexpr std::array<std::string_view, 7> expected_colours{
             "amb", "blu", "brn", "gry", "grn", "hzl", "oth",
         };
-        bool validate_eye(const std::string_view &value) {
+        bool validate_eye(const std::string_view value) {
             return std::ranges::contains(expected_colours, value);
         }
 
-        bool validate_pid(const std::string_view &value) {
+        bool validate_pid(const std::string_view value) {
             const lexy::string_input input(value.data(), value.size());
 
             return !!lexy::validate<Pid>(input, lexy::noop);
@@ -137,7 +136,7 @@ namespace aoc::day04_2020 {
 
         struct Field {
             std::string_view key;
-            bool (*valid)(const std::string_view &);
+            bool (*valid)(const std::string_view);
         };
 
         constexpr std::array expected_fields{
