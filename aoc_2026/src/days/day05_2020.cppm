@@ -1,10 +1,11 @@
 module;
 
+#include <array>
 #include <algorithm>
-#include <cmath>
 #include <expected>
 #include <ranges>
 #include <span>
+#include <string_view>
 #include <string>
 #include <utility>
 #include <vector>
@@ -87,8 +88,7 @@ namespace aoc::day05_2020 {
         };
 
         auto locate = [](auto acc, const auto &dir) -> std::pair<int, int> {
-            const auto diff = static_cast<double>(acc.second - acc.first);
-            const auto half = static_cast<int>(std::ceil(diff / 2));
+            const auto half = (acc.second - acc.first + 1) / 2;
 
             switch (dir) {
                 case DIR::F: {
@@ -141,10 +141,7 @@ namespace aoc::day05_2020 {
                 std::views::transform(
                     [&numbers](auto i) { return std::span{numbers}.subspan(i, 2); }) |
                 std::views::filter([](auto window) { return window.back() - window.front() > 1; }) |
-                std::views::transform([](auto window) {
-                    return std::ranges::fold_left(window, 0, std::plus<int>{}) / 2;
-                }) |
-                std::views::take(1);
+                std::views::transform([](auto window) { return window.front() + 1; });
 
             return seat.front();
         }
