@@ -167,11 +167,10 @@ namespace aoc::day04_2020 {
 
         [[nodiscard]] static std::expected<Input, std::string>
         parse(const std::span<const std::string> lines) {
-            return lines |
-                std::views::split(std::string{}) |
-                std::views::filter([](auto group) -> bool { return !std::ranges::empty(group); }) |
-                std::views::transform(parse_record) |
-                CollectRecords{};
+            return lines | std::views::split(std::string{}) |
+                   std::views::filter(
+                       [](auto group) -> bool { return !std::ranges::empty(group); }) |
+                   std::views::transform(parse_record) | CollectRecords{};
         }
 
         [[nodiscard]] static std::int64_t part1(const Input &input) {
