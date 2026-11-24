@@ -1,12 +1,12 @@
 module;
 
-#include <array>
 #include <algorithm>
+#include <array>
 #include <expected>
 #include <ranges>
 #include <span>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -135,15 +135,18 @@ namespace aoc::day05_2020 {
             auto numbers = seat_numbers(input);
             std::ranges::sort(numbers);
 
-            auto seat =
-                std::views::iota(std::size_t{0}, numbers.size()) |
-                std::views::filter([&numbers](auto i) { return numbers.size() - i >= 2; }) |
-                std::views::transform(
-                    [&numbers](auto i) { return std::span{numbers}.subspan(i, 2); }) |
-                std::views::filter([](auto window) { return window.back() - window.front() > 1; }) |
-                std::views::transform([](auto window) { return window.front() + 1; });
+            auto [fst, snd] = std::make_pair(numbers.begin(), numbers.end() - 1);
+            while (snd - fst > 1) {
+                const auto mid = fst + (snd - fst) / 2;
 
-            return seat.front();
+                if (*mid - *fst > mid - fst) {
+                    snd = mid;
+                } else {
+                    fst = mid;
+                }
+            }
+
+            return *fst + 1;
         }
     };
 
