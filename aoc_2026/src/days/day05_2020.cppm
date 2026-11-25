@@ -91,8 +91,12 @@ namespace aoc::day05_2020 {
             const auto half = (acc.second - acc.first + 1) / 2;
 
             switch (dir) {
-                case DIR::F: acc.second -= half; break;
-                case DIR::B: acc.first += half; break;
+                case DIR::F:
+                    acc.second -= half;
+                    break;
+                case DIR::B:
+                    acc.first += half;
+                    break;
             }
 
             return acc;
