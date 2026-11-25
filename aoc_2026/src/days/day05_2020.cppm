@@ -87,29 +87,22 @@ namespace aoc::day05_2020 {
             }
         };
 
-        auto locate = [](auto acc, const auto &dir) -> std::pair<int, int> {
+        std::pair<int, int> locate(std::pair<int, int> acc, const DIR dir) {
             const auto half = (acc.second - acc.first + 1) / 2;
 
             switch (dir) {
-                case DIR::F: {
-                    acc.second -= half;
-                    break;
-                }
-                case DIR::B: {
-                    acc.first += half;
-                    break;
-                }
-                default:
+                case DIR::F: acc.second -= half; break;
+                case DIR::B: acc.first += half; break;
             }
 
             return acc;
-        };
+        }
 
         std::vector<int64_t> seat_numbers(const Input &input) {
             return input | std::views::transform([](const auto &seat) -> std::int64_t {
-                       auto down =
+                       const auto down =
                            std::ranges::fold_left(seat.down, std::make_pair(0, 127), locate);
-                       auto across =
+                       const auto across =
                            std::ranges::fold_left(seat.across, std::make_pair(0, 7), locate);
 
                        return down.first * 8 + across.first;
